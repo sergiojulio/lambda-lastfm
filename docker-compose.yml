@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  app:
+    container_name: lastfm-elt
+    build: 
+      context: ./ 
+      dockerfile: ./Dockerfile
+    #command: lambda_function.handler
+    ports:
+      - 9000:9000 
+    volumes:
+      - /var/task:/home/sergio/dev/docker/lambda-lastfm/ 
+    environment:
+      - ENV=dev   
+volumes:
+  app:
+    driver: local

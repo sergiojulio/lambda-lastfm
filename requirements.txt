@@ -1,0 +1,5 @@
+boto3
+pyarrow
+pyiceberg
+requests
+python-dotenv
