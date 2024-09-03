@@ -294,9 +294,8 @@ def transformation(date):
 
     gold_table.append(silver_df) 
 
-
+"""
 if __name__ == '__main__':
-
     #warehouse()
     date = "2024-08-04"
     extract(date)
@@ -304,22 +303,21 @@ if __name__ == '__main__':
     query('silver')
     transformation(date)
     query('gold')
-
-
+"""
 
 def handler(event, context):
     # step date env
     step = event['step']
     date = event['date']
-    env = event['env']
+    env  = event['env']
 
     match step:
         case "extract":
             return "extract"
         case "load":
             return {
-                'statusCode': 200,
-                'body': json.dumps('Hello from Lambda!')
+                'statusCode': 201,
+                'body': json.dumps('In My Head')
             }
         case "transform":
             return "transform"

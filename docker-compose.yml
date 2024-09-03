@@ -7,9 +7,9 @@ services:
       dockerfile: ./Dockerfile
     #command: lambda_function.handler
     ports:
-      - 9000:9000 
+      - 9000:8080 
     volumes:
-      - /var/task:/home/sergio/dev/docker/lambda-lastfm/ 
+      - .:/var/task
     environment:
       - ENV=dev   
 volumes:
