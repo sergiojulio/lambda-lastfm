@@ -16,7 +16,7 @@ api_key = os.getenv('API_KEY')
 
 
 
-# Create de database and schematas
+# Create de database and schematas only local
 def warehouse():
 
     from pyiceberg.schema import Schema
@@ -139,7 +139,8 @@ def extract(date):
         dt = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
         date_to = int(dt.replace(tzinfo=timezone.utc).timestamp())
 
-        response = requests.get('https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=' + api_key + '&from=' + str(date_from) + '&to=' + str(date_to) + '&format=json')
+        response = requests.get("https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=" + 
+                                str(api_key) + "&from=" + str(date_from) + "&to=" + str(date_to) + "&format=json")
 
         response.raise_for_status()
         json_response = response.json()
@@ -155,7 +156,7 @@ def extract(date):
             # return list
             list = get_tracks(start=date_from, end=date_to, page=c)
             c -= 1
-            lists = lists + list
+            lists = lists + str(list)
             
         with open('./warehouse/raw/tracks-' + date + '.csv', 'w') as f:
             f.write(lists)
@@ -175,7 +176,8 @@ def get_tracks(start, end, page):
     
     try:
         # request
-        response = requests.get('https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=' + api_key + '&from=' + str(start) + '&to=' +  str(end) + '&page=' + str(page) + '&format=json')
+        response = requests.get('https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=' + 
+                                str(api_key) + '&from=' + str(start) + '&to=' +  str(end) + '&page=' + str(page) + '&format=json')
     
         lists = ''
 
@@ -212,7 +214,7 @@ def get_tracks(start, end, page):
 
 
 #LOAD
-def load(date):
+def load(date, env):
 
     from datetime import date as dt
     from pyiceberg.catalog.sql import SqlCatalog
@@ -222,13 +224,20 @@ def load(date):
 
     warehouse_path = "./warehouse"
 
-    catalog = SqlCatalog(
-        "lastfm",
-        **{
-            "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
-            "warehouse": f"file://{warehouse_path}",
-        },
-    )
+    if env == "dev":
+
+        catalog = SqlCatalog(
+            "lastfm",
+            **{
+                "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
+                "warehouse": f"file://{warehouse_path}",
+            },
+        )
+
+    else:
+        v = 0
+                        
+
 
     table = catalog.load_table("silver.tracks")
 
@@ -294,16 +303,6 @@ def transformation(date):
 
     gold_table.append(silver_df) 
 
-"""
-if __name__ == '__main__':
-    #warehouse()
-    date = "2024-08-04"
-    extract(date)
-    load(date)
-    query('silver')
-    transformation(date)
-    query('gold')
-"""
 
 def handler(event, context):
     # step date env
@@ -321,7 +320,46 @@ def handler(event, context):
             }
         case "transform":
             return "transform"
-        
+
+
+def test():
+    import boto3
+    import pyarrow.fs as fs
+    import pyarrow.parquet as pq
+    import pyarrow.csv as pc
+
+    s3 = fs.S3FileSystem(
+        region=os.getenv('AWS_REGION'),
+        access_key=os.getenv('AWS_ACCESS_KEY'),
+        secret_key=os.getenv('AWS_SECRET_KEY')
+        #session_token=session_token  # Include the session token if using temporary credentials
+    )
+    #print("S3 Filesystem:", s3)
+
+    #s3 = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+
+
+    s3_path = "aws-boto3-pipeline-bucket/order_extract.csv"
+
+    # Step 3: Open the file and read it using PyArrow's CSV reader
+    with s3.open_input_file(s3_path) as file:
+        df = pc.read_csv(file)
+
+    # Display the DataFrame
+    print(df)
+
+
+
+
+if __name__ == '__main__':
+    #warehouse()
+    #date = "2024-08-04"
+    #extract(date)
+    #load(date)
+    #query('silver')
+    #transformation(date)
+    #query('gold')
+    test()
 
 
 
