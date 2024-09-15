@@ -15,7 +15,6 @@ api_key = os.getenv('API_KEY')
 #enviroment = os.getenv('ENVIROMENT') # dev - prd (butquet)
 
 
-
 # Create de database and schematas only local
 def warehouse():
 
@@ -36,7 +35,6 @@ def warehouse():
             "warehouse": f"file://{warehouse_path}",
         },
     )
-
 
      # processing   
 
