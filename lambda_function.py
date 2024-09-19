@@ -124,7 +124,7 @@ def query(schema):
       
 
 #EXTRACT
-def extract(date):
+def extract(env, date):
     try:
 
         # date to timestamp
@@ -212,7 +212,7 @@ def get_tracks(start, end, page):
 
 
 #LOAD
-def load(date, env):
+def load(env, date):
 
     from datetime import date as dt
     from pyiceberg.catalog.sql import SqlCatalog
@@ -255,7 +255,7 @@ def load(date, env):
 
 
 #TRANSFORM 
-def transformation(date):
+def transformation(env, date):
 
     from pyiceberg.catalog.sql import SqlCatalog
     from pyiceberg.expressions import EqualTo, NotEqualTo
@@ -310,6 +310,7 @@ def handler(event, context):
 
     match step:
         case "extract":
+            # 
             return "extract"
         case "load":
             return {
