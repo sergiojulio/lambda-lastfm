@@ -7,12 +7,20 @@ from requests.exceptions import HTTPError
 from pathlib import Path
 from dotenv import load_dotenv
 
+import boto3
+
+
 dotenv_path = Path('.env/.venv')
 load_dotenv(dotenv_path=dotenv_path)
 
 # mastodon access token
 api_key = os.getenv('API_KEY')
 #enviroment = os.getenv('ENVIROMENT') # dev - prd (butquet)
+aws_access_key = os.getenv('AWS_ACCESS_KEY')
+aws_secret_key = os.getenv('AWS_SECRET_KEY')
+aws_bucket_name = os.getenv('AWS_BUCKET_NAME')
+aws_account_id = os.getenv('AWS_ACCOUNT_ID')
+aws_region = os.getenv('AWS_REGION')
 
 
 # Create de database and schematas only local
@@ -98,9 +106,12 @@ def drop_table():
     catalog.drop_table("gold.tracks")
 
 
-def query(schema):
+def query(env, schema):
 
     from pyiceberg.catalog.sql import SqlCatalog
+
+
+
 
     warehouse_path = "./warehouse"
 
@@ -111,6 +122,12 @@ def query(schema):
             "warehouse": f"file://{warehouse_path}",
         },
     )  
+
+
+
+
+
+
 
     table = catalog.load_table((schema, 'tracks'))
 
@@ -347,6 +364,26 @@ def test():
     # Display the DataFrame
     print(df)
 
+def test2():
+    from pyiceberg.catalog import load_catalog
+
+    # Load the AWS Glue catalog (or AWS Athena catalog)
+    catalog = load_catalog('aws', 
+                          **{
+                                "uri": "http://127.0.0.1:8181",
+                                "s3.endpoint": "http://127.0.0.1:9000",
+                                "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
+                                "s3.access-key-id": aws_access_key,
+                                "s3.secret-access-key": aws_secret_key,
+                            }
+                          )
+
+    # Access a specific Iceberg table in the Glue catalog
+    # gold_table = catalog.load_table(('gold', 'tracks'))
+    table = catalog.load_table("silver.tracks")
+
+    # Print the schema of the table
+    print(table.schema())
 
 
 
@@ -358,7 +395,7 @@ if __name__ == '__main__':
     #query('silver')
     #transformation(date)
     #query('gold')
-    test()
+    test2()
 
 
 
