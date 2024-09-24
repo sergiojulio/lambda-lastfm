@@ -110,9 +110,6 @@ def query(env, schema):
 
     from pyiceberg.catalog.sql import SqlCatalog
 
-
-
-
     warehouse_path = "./warehouse"
 
     catalog = SqlCatalog(
@@ -122,12 +119,6 @@ def query(env, schema):
             "warehouse": f"file://{warehouse_path}",
         },
     )  
-
-
-
-
-
-
 
     table = catalog.load_table((schema, 'tracks'))
 
