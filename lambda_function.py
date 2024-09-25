@@ -359,13 +359,12 @@ def test2():
     from pyiceberg.catalog import load_catalog
 
     # Load the AWS Glue catalog (or AWS Athena catalog)
-    catalog = load_catalog('aws', 
+    catalog = load_catalog('default', 
                           **{
-                                "uri": "http://127.0.0.1:8181",
-                                "s3.endpoint": "http://127.0.0.1:9000",
-                                "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
+                                "type": "glue",
                                 "s3.access-key-id": aws_access_key,
                                 "s3.secret-access-key": aws_secret_key,
+                                "s3.region": "us-east-1"
                             }
                           )
 
