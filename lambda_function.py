@@ -9,11 +9,9 @@ from dotenv import load_dotenv
 
 import boto3
 
-
 dotenv_path = Path('.env/.venv')
 load_dotenv(dotenv_path=dotenv_path)
 
-# mastodon access token
 api_key = os.getenv('API_KEY')
 #enviroment = os.getenv('ENVIROMENT') # dev - prd (butquet)
 aws_access_key = os.getenv('AWS_ACCESS_KEY')
