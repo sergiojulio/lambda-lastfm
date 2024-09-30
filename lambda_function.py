@@ -354,6 +354,10 @@ def test():
     print(df)
 
 def test2():
+
+    from datetime import date as dt
+    import pyarrow as pa
+    import pyarrow.csv as pc
     from pyiceberg.catalog import load_catalog
 
     # Load the AWS Glue catalog (or AWS Athena catalog)
@@ -368,10 +372,27 @@ def test2():
 
     # Access a specific Iceberg table in the Glue catalog
     # gold_table = catalog.load_table(('gold', 'tracks'))
-    table = catalog.load_table("silver.tracks")
+    table = catalog.load_table("lastfm.tracks")
+
+    #table = catalog.load_table((schema, 'tracks'))
+
+    #print(table.describe())
+
+    # insert
+    df = pc.read_csv("/home/sergio/dev/python/lastfm-api/warehouse/raw/tracks-2024-08-02.csv")
+
+    year, month, day = map(int, "2024-08-02".split('-'))
+
+    df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
+
+    table.append(df) 
+
+    con = table.scan().to_arrow()
+
+    print(con)
 
     # Print the schema of the table
-    print(table.schema())
+    #print(table.schema())
 
 
 
