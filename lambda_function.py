@@ -373,9 +373,7 @@ def test2():
     # Access a specific Iceberg table in the Glue catalog
     # gold_table = catalog.load_table(('gold', 'tracks'))
     table = catalog.load_table("lastfm.tracks")
-
     #table = catalog.load_table((schema, 'tracks'))
-
     #print(table.describe())
 
     # insert
