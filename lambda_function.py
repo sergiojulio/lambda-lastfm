@@ -403,8 +403,3 @@ if __name__ == '__main__':
     #transformation(date)
     #query('gold')
     test2()
-
-
-
-
-
