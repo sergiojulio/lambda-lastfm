@@ -385,27 +385,9 @@ def test2():
 
     table.append(df) 
 
+    con = table.scan().to_arrow()
 
-
-    # Access the latest snapshot
-    latest_snapshot = table.current_snapshot()
-
-    # Initialize row count
-    total_rows = 0
-
-    # Iterate through all manifests (data files)
-    for manifest_file in latest_snapshot.all_manifests:
-        for data_file in manifest_file.data_files:
-            # Accumulate the row count from each data file
-            total_rows += data_file.record_count
-
-    print(f"Total rows in table: {total_rows}")
-
-
-
-    #con = table.scan().to_arrow()
-
-    #print(con)
+    print(len(con))
 
     # Print the schema of the table
     #print(table.schema())
