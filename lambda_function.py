@@ -392,6 +392,11 @@ def test2():
     # Print the schema of the table
     #print(table.schema())
 
+def test3():
+    # run dbt model
+    # s3://athena_query_result/lastfm-warehouse/silver.db/
+    # s3://athena_query_result/lastfm-warehouse/gold.db/
+    return 0
 
 
 if __name__ == '__main__':
