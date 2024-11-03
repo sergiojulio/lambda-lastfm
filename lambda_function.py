@@ -407,4 +407,4 @@ if __name__ == '__main__':
     #query('silver')
     #transformation(date)
     #query('gold')
-    test2()
+    test3()
