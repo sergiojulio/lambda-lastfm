@@ -394,9 +394,21 @@ def test2():
 
 def test3():
     # run dbt model
-    # s3://athena_query_result/lastfm-warehouse/silver.db/
-    # s3://athena_query_result/lastfm-warehouse/gold.db/
-    return 0
+    from dbt.cli.main import dbtRunner, dbtRunnerResult
+
+    # initialize
+    dbt = dbtRunner()
+
+    # create CLI args as a list of strings
+    # cli_args = ["run", "--profiles-dir", "./lastfm"]
+    cli_args = ["run", "--project-dir", "./lastfm"]
+
+    # run the command
+    res: dbtRunnerResult = dbt.invoke(cli_args)
+
+    # inspect the results
+    for r in res.result:
+        print(f"{r.node.name}: {r.status}")
 
 
 if __name__ == '__main__':
