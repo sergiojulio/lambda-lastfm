@@ -388,7 +388,6 @@ def test2():
     con = table.scan().to_arrow()
 
     print(len(con))
-
     # Print the schema of the table
     #print(table.schema())
 
