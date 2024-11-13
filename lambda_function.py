@@ -12,7 +12,7 @@ import boto3
 dotenv_path = Path('.env/.venv')
 load_dotenv(dotenv_path=dotenv_path)
 
-api_key = os.getenv('API_KEY')
+api_key = os.getenv('LASTFM_API_KEY')
 #enviroment = os.getenv('ENVIROMENT') # dev - prd (butquet)
 aws_access_key = os.getenv('AWS_ACCESS_KEY')
 aws_secret_key = os.getenv('AWS_SECRET_KEY')
@@ -162,9 +162,16 @@ def extract(env, date):
             c -= 1
             lists = lists + str(list)
             
-        with open('./warehouse/raw/tracks-' + date + '.csv', 'w') as f:
-            f.write(lists)
-            f.close()
+
+        # if env
+        if env == 'dev':
+            with open('./warehouse/raw/tracks-' + date + '.csv', 'w') as f:
+                f.write(lists)
+                f.close()
+        else:
+            s3_client = boto3.client('s3')
+            s3_client.put_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv', Body=lists)
+
 
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
@@ -308,6 +315,8 @@ def transformation(env, date):
     gold_table.append(silver_df) 
 
 
+# streamlit dashboard
+
 def handler(event, context):
     # step date env
     step = event['step']
@@ -412,10 +421,11 @@ def test3():
 
 if __name__ == '__main__':
     #warehouse()
-    #date = "2024-08-04"
-    #extract(date)
+    date = '2024-08-04'
+    env = 'prd'
+    extract(env, date)
     #load(date)
     #query('silver')
     #transformation(date)
     #query('gold')
-    test3()
+    #test3()
