@@ -233,9 +233,11 @@ def load(env, date):
     import pyarrow as pa
     import pyarrow.csv as pc
 
-    warehouse_path = "./warehouse"
+    
 
     if env == "dev":
+
+        warehouse_path = "./warehouse"
 
         catalog = SqlCatalog(
             "lastfm",
@@ -245,26 +247,61 @@ def load(env, date):
             },
         )
 
+        table = catalog.load_table("silver.tracks")
+
+        df = table.scan(
+            row_filter = NotEqualTo("date", date)
+        ).to_arrow()  
+
+        table.overwrite(df) 
+
+        df = pc.read_csv(warehouse_path + "/raw/tracks-" + date + ".csv")
+
+        year, month, day = map(int, date.split('-'))
+
+        df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
+
+        table.append(df)   
+
     else:
-        v = 0
-                        
 
+        from pyiceberg.catalog import load_catalog
 
-    table = catalog.load_table("silver.tracks")
+        catalog = load_catalog('default', 
+                            **{
+                                    "type": "glue",
+                                    "s3.access-key-id": aws_access_key,
+                                    "s3.secret-access-key": aws_secret_key,
+                                    "s3.region": "us-east-1"
+                                }
+                            )
 
-    df = table.scan(
-        row_filter = NotEqualTo("date", date)
-    ).to_arrow()  
+        table = catalog.load_table("lastfm.tracks")
 
-    table.overwrite(df) 
+        # delete rows!
+        df = table.scan(
+            row_filter = NotEqualTo("date", date)
+        ).to_arrow()  
 
-    df = pc.read_csv(warehouse_path + "/raw/tracks-" + date + ".csv")
+        table.overwrite(df) 
+        #
+        
+        s3_client = boto3.client('s3')
 
-    year, month, day = map(int, date.split('-'))
+        response = s3_client.get_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv')
 
-    df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
+        csv_data = response['Body'].read().decode('utf-8')
 
-    table.append(df)    
+        # Convert to a Pandas DataFrame
+        df = pc.read_csv(csv_data)
+
+        year, month, day = map(int, date.split('-'))
+
+        df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
+
+        # write iceberg data
+        table.append(df)                        
+
 
 
 #TRANSFORM 
@@ -423,8 +460,8 @@ if __name__ == '__main__':
     #warehouse()
     date = '2024-08-04'
     env = 'prd'
-    extract(env, date)
-    #load(date)
+    #extract(env, date)
+    load(env, date)
     #query('silver')
     #transformation(date)
     #query('gold')
