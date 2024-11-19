@@ -266,6 +266,7 @@ def load(env, date):
     else:
 
         from pyiceberg.catalog import load_catalog
+        import pyarrow.fs as fs
 
         catalog = load_catalog('default', 
                             **{
@@ -284,16 +285,18 @@ def load(env, date):
         ).to_arrow()  
 
         table.overwrite(df) 
-        #
+        # 
         
-        s3_client = boto3.client('s3')
+        # s3_client = boto3.client('s3')
+        # response = s3_client.get_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv')
+        # csv_data = response['Body'].read().decode('utf-8')
+        s3 = fs.S3FileSystem(region=aws_region)  # Specify the region of your S3 bucket
 
-        response = s3_client.get_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv')
+        # Open the S3 file
+        with s3.open_input_file("lastfm-warehouse/raw/tracks-" + date + ".csv") as file:
+            # Read the CSV file into a PyArrow Table
+            df = pc.read_csv(file)
 
-        csv_data = response['Body'].read().decode('utf-8')
-
-        # Convert to a Pandas DataFrame
-        df = pc.read_csv(csv_data)
 
         year, month, day = map(int, date.split('-'))
 
