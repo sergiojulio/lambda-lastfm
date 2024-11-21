@@ -30,7 +30,7 @@ def warehouse():
     from pyiceberg.types import NestedField, IntegerType, StringType, DateType, TimestampType, LongType
     from pyiceberg.partitioning import PartitionSpec, PartitionField, IdentityTransform, DayTransform
 
-    warehouse_path = "./warehouse"
+    warehouse_path = "./lastfm-warehouse"
 
     # data warehouse
 
@@ -41,6 +41,8 @@ def warehouse():
             "warehouse": f"file://{warehouse_path}",
         },
     )
+
+    catalog.create_namespace("lastfm")
 
      # processing   
 
@@ -56,12 +58,12 @@ def warehouse():
         NestedField(field_id=9, name='date', field_type=DateType(), required=False)
     )
 
-    catalog.create_namespace("silver")
+    #catalog.create_namespace("silver")
 
     partition_spec = PartitionSpec(PartitionField(source_id=9, field_id=9, transform=IdentityTransform(), name="date"), spec_id=1)
 
     catalog.create_table(
-        "silver.tracks",
+        "lastfm.silver_tracks",
         schema=schema,
         partition_spec=partition_spec
     ) 
@@ -76,12 +78,12 @@ def warehouse():
         NestedField(field_id=5, name='date', field_type=DateType(), required=False)
     )
 
-    catalog.create_namespace("gold")
+    #catalog.create_namespace("gold")
 
     partition_spec = PartitionSpec(PartitionField(source_id=5, field_id=5, transform=IdentityTransform(), name="date"), spec_id=1)
 
     catalog.create_table(
-        "gold.tracks",
+        "lastfm.gold_tracks",
         schema=schema,
         partition_spec=partition_spec
     ) 
@@ -104,11 +106,13 @@ def drop_table():
     catalog.drop_table("gold.tracks")
 
 
-def query(env, schema):
+def query(env, table_name):
 
     from pyiceberg.catalog.sql import SqlCatalog
 
-    warehouse_path = "./warehouse"
+    # ToDo only for local...
+
+    warehouse_path = "./lastfm-warehouse"
 
     catalog = SqlCatalog(
         "lastfm",
@@ -118,14 +122,14 @@ def query(env, schema):
         },
     )  
 
-    table = catalog.load_table((schema, 'tracks'))
+    table = catalog.load_table(('lastfm', table_name))
 
     #print(table.describe())
 
-    con = table.scan().to_duckdb(table_name="tracks")
+    con = table.scan().to_duckdb(table_name=table_name)
 
     con.sql(
-        "SELECT date, COUNT(*) total FROM tracks GROUP BY date ORDER BY date ASC"
+        "SELECT date, COUNT(*) total FROM " + table_name + " GROUP BY date ORDER BY date ASC"
     ).show()
       
 
@@ -165,7 +169,7 @@ def extract(env, date):
 
         # if env
         if env == 'dev':
-            with open('./warehouse/raw/tracks-' + date + '.csv', 'w') as f:
+            with open('./lastfm-warehouse/raw/tracks-' + date + '.csv', 'w') as f:
                 f.write(lists)
                 f.close()
         else:
@@ -237,7 +241,7 @@ def load(env, date):
 
     if env == "dev":
 
-        warehouse_path = "./warehouse"
+        warehouse_path = "./lastfm-warehouse"
 
         catalog = SqlCatalog(
             "lastfm",
@@ -247,7 +251,7 @@ def load(env, date):
             },
         )
 
-        table = catalog.load_table("silver.tracks")
+        table = catalog.load_table("lastfm.silver_tracks")
 
         df = table.scan(
             row_filter = NotEqualTo("date", date)
@@ -277,7 +281,7 @@ def load(env, date):
                                 }
                             )
 
-        table = catalog.load_table("lastfm.tracks")
+        table = catalog.load_table("lastfm.silver_tracks")
 
         # delete rows!
         df = table.scan(
@@ -306,7 +310,6 @@ def load(env, date):
         table.append(df)                        
 
 
-
 #TRANSFORM 
 def transformation(env, date):
 
@@ -316,7 +319,7 @@ def transformation(env, date):
     import pyarrow as pa
     import pyarrow.compute as pc
 
-    warehouse_path = "./warehouse"
+    warehouse_path = "./lastfm-warehouse"
 
     catalog = SqlCatalog(
         "lastfm",
@@ -326,7 +329,7 @@ def transformation(env, date):
         },
     )  
 
-    silver_table = catalog.load_table(('silver', 'tracks'))
+    silver_table = catalog.load_table(('lastfm', 'silver_tracks'))
 
     silver_df = silver_table.scan(
         row_filter = EqualTo("date", date),
@@ -341,7 +344,7 @@ def transformation(env, date):
 
     # gold
 
-    gold_table = catalog.load_table(('gold', 'tracks'))
+    gold_table = catalog.load_table(('lastfm', 'gold_tracks'))
 
     df = gold_table.scan(
         row_filter = NotEqualTo("date", date)
@@ -463,9 +466,11 @@ if __name__ == '__main__':
     #warehouse()
     date = '2024-08-04'
     env = 'prd'
+
     #extract(env, date)
     load(env, date)
-    #query('silver')
-    #transformation(date)
+    #transformation(env, date)
+
+    query(env, 'gold_tracks')
     #query('gold')
     #test3()
