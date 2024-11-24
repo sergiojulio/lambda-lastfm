@@ -12,6 +12,39 @@ services:
       - .:/var/task
     environment:
       - ENV=dev   
+
+  trino-coordinator:
+    image: 'trinodb/trino:latest'
+    hostname: trino-coordinator
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./trino/etc:/etc/trino
+      - ./trino/conf:/etc/trino/conf
+    networks:
+      - trino-network
+
+  postgres:
+    container_name: postgres-db
+    image: postgres:14.1-alpine
+    # restart: always
+    environment:
+      - POSTGRES_DB=postgres_catalog
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_ROOT_PASSWORD=root
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - trino-network
+
 volumes:
   app:
     driver: local
+
+networks:
+  trino-network:
+    driver: bridge
