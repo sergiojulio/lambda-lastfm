@@ -20,6 +20,9 @@ aws_bucket_name = os.getenv('AWS_BUCKET_NAME')
 aws_account_id = os.getenv('AWS_ACCOUNT_ID')
 aws_region = os.getenv('AWS_REGION')
 
+#warehouse_path = "/home/sergio/dev/docker/lambda-lastfm/lastfm-warehouse/"
+warehouse_path = "lastfm-warehouse/"
+
 
 # Create de database and schematas only local
 def warehouse():
@@ -30,18 +33,19 @@ def warehouse():
     from pyiceberg.types import NestedField, IntegerType, StringType, DateType, TimestampType, LongType
     from pyiceberg.partitioning import PartitionSpec, PartitionField, IdentityTransform, DayTransform
 
-    warehouse_path = "./lastfm-warehouse"
 
     # data warehouse
 
     catalog = SqlCatalog(
         "lastfm",
         **{
-            "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
-            "warehouse": f"file://{warehouse_path}",
+            "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
+            "warehouse": f"s3://{warehouse_path}",
+            "s3.endpoint": "http://localhost:9000",
+            "s3.access-key-id": "minio",
+            "s3.secret-access-key": "minio123",
         },
-    )
-
+    )  
     catalog.create_namespace("lastfm")
 
      # processing   
@@ -92,12 +96,11 @@ def warehouse():
 def drop_table():
 
     from pyiceberg.catalog.sql import SqlCatalog
-    warehouse_path = "./warehouse"
 
     catalog = SqlCatalog(
-        "lasftfm",
+        "lastfm",
         **{
-            "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
+            "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
             "warehouse": f"file://{warehouse_path}",
         },
     )  
@@ -112,15 +115,13 @@ def query(env, table_name):
 
     # ToDo only for local...
 
-    warehouse_path = "./lastfm-warehouse"
-
     catalog = SqlCatalog(
         "lastfm",
         **{
-            "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
+            "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
             "warehouse": f"file://{warehouse_path}",
         },
-    )  
+    )   
 
     table = catalog.load_table(('lastfm', table_name))
 
@@ -241,15 +242,13 @@ def load(env, date):
 
     if env == "dev":
 
-        warehouse_path = "./lastfm-warehouse"
-
         catalog = SqlCatalog(
             "lastfm",
             **{
-                "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
+                "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
                 "warehouse": f"file://{warehouse_path}",
             },
-        )
+        )  
 
         table = catalog.load_table("lastfm.silver_tracks")
 
@@ -319,15 +318,13 @@ def transformation(env, date):
     import pyarrow as pa
     import pyarrow.compute as pc
 
-    warehouse_path = "./lastfm-warehouse"
-
     catalog = SqlCatalog(
         "lastfm",
         **{
-            "uri": f"sqlite:///{warehouse_path}/pyiceberg_catalog.db",
+            "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
             "warehouse": f"file://{warehouse_path}",
         },
-    )  
+    )   
 
     silver_table = catalog.load_table(('lastfm', 'silver_tracks'))
 
@@ -463,14 +460,14 @@ def test3():
 
 
 if __name__ == '__main__':
-    #warehouse()
-    date = '2024-08-04'
-    env = 'prd'
+    warehouse()
+    #date = '2024-08-04'
+    #env = 'dev'
 
     #extract(env, date)
-    load(env, date)
+    #load(env, date)
     #transformation(env, date)
 
-    query(env, 'gold_tracks')
+    #query(env, 'gold_tracks')
     #query('gold')
     #test3()

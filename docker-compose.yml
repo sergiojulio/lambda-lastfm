@@ -7,7 +7,8 @@ services:
       dockerfile: ./Dockerfile
     #command: lambda_function.handler
     ports:
-      - 9000:8080 
+      # - 9000:8080 original
+      - 9090:9090
     volumes:
       - .:/var/task
     environment:
@@ -19,15 +20,16 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - ./trino/etc:/etc/trino
-      - ./trino/conf:/etc/trino/conf
+      # - <host_directory>:<container_directory>:<access_mode>
+      # - ./trino/etc:/etc/trino
+      - ./lastfm-warehouse:/lastfm-warehouse
     networks:
       - trino-network
 
   postgres:
     container_name: postgres-db
     image: postgres:14.1-alpine
-    # restart: always
+    #restart: always
     environment:
       - POSTGRES_DB=postgres_catalog
       - POSTGRES_USER=postgres
@@ -40,6 +42,27 @@ services:
       # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - trino-network
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+    - 9000:9000 # CLI
+    - 9001:9001 # Web 
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      #- /path/to/data:/data
+      - ./lastfm-warehouse:/lastfm-warehouse
+    command: server /lastfm-warehouse
+
+  minio-client:
+    image: minio/mc
+    # insure that the server container is running before building the client
+    depends_on:
+      - minio
+
 
 volumes:
   app:
