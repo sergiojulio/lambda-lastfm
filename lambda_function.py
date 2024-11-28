@@ -19,6 +19,7 @@ aws_secret_key = os.getenv('AWS_SECRET_KEY')
 aws_bucket_name = os.getenv('AWS_BUCKET_NAME')
 aws_account_id = os.getenv('AWS_ACCOUNT_ID')
 aws_region = os.getenv('AWS_REGION')
+# MinIO env
 
 #warehouse_path = "/home/sergio/dev/docker/lambda-lastfm/lastfm-warehouse/"
 warehouse_path = "lastfm-warehouse/"
@@ -170,12 +171,47 @@ def extract(env, date):
 
         # if env
         if env == 'dev':
-            with open('./lastfm-warehouse/raw/tracks-' + date + '.csv', 'w') as f:
-                f.write(lists)
-                f.close()
+            # local file system
+            # with open('./lastfm-warehouse/raw/tracks-' + date + '.csv', 'w') as f:
+            #     f.write(lists)
+            #     f.close()
+            # MinIO
+
+            # Define your MinIO credentials and endpoint
+            minio_endpoint = "http://localhost:9000"  # Replace with your MinIO URL
+            access_key = "minio"
+            secret_key = "minio123"
+            bucket_name = "lastfm-warehouse"
+            file_name = 'raw/tracks-' + date + '.csv'
+
+            # Initialize the MinIO client
+            s3_client = boto3.client(
+                's3',
+                endpoint_url=minio_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+            )
+
+            # Upload the CSV file to MinIO
+            try:
+                s3_client.put_object(
+                    Bucket=bucket_name,
+                    Key=file_name,
+                    Body=lists
+                )
+                print(f"File '{file_name}' uploaded successfully to bucket '{bucket_name}'.")
+            except Exception as e:
+                print(f"Error uploading file: {e}")
+
+
         else:
             s3_client = boto3.client('s3')
-            s3_client.put_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv', Body=lists)
+            # try
+            s3_client.put_object(
+                Bucket='lastfm-warehouse', 
+                Key='raw/tracks-' + date + '.csv', 
+                Body=lists,
+            )
 
 
     except HTTPError as http_err:
@@ -242,13 +278,25 @@ def load(env, date):
 
     if env == "dev":
 
+        # catalog = SqlCatalog(
+        #     "lastfm",
+        #     **{
+        #         "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
+        #         "warehouse": f"file://{warehouse_path}",
+        #     },
+        # )  
+
         catalog = SqlCatalog(
             "lastfm",
             **{
                 "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
-                "warehouse": f"file://{warehouse_path}",
+                "warehouse": f"s3://{warehouse_path}",
+                "s3.endpoint": "http://localhost:9000",
+                "s3.access-key-id": "minio",
+                "s3.secret-access-key": "minio123",
             },
-        )  
+        )
+
 
         table = catalog.load_table("lastfm.silver_tracks")
 
@@ -258,7 +306,37 @@ def load(env, date):
 
         table.overwrite(df) 
 
-        df = pc.read_csv(warehouse_path + "/raw/tracks-" + date + ".csv")
+
+        import pyarrow.fs as fs
+
+        minio_endpoint = "http://localhost:9000"  # Replace with your MinIO URL
+        access_key = "minio"
+        secret_key = "minio123"
+        bucket_name = "lastfm-warehouse"
+        file_name = 'raw/tracks-' + date + '.csv'
+
+        s3 = fs.S3FileSystem(
+                region="us-east-1",
+                access_key = "minio",
+                secret_key = "minio123",
+                endpoint_override="http://localhost:9000"
+            )  # Specify the region of your S3 bucket
+
+        # Full S3 path to the file
+        s3_file_path = f"{bucket_name}/{file_name}"
+
+        # Open the file and read it using pyarrow
+        try:
+            with s3.open_input_file(s3_file_path) as file:
+                df = pc.read_csv(file)  # Read the CSV file into a PyArrow Table
+                #print(table)
+        except Exception as e:
+            print(f"Error reading CSV file: {e}")
+
+
+        #df = pc.read_csv(warehouse_path + "/raw/tracks-" + date + ".csv")
+
+
 
         year, month, day = map(int, date.split('-'))
 
@@ -460,7 +538,7 @@ def test3():
 
 
 if __name__ == '__main__':
-    warehouse()
+    #warehouse()
     #date = '2024-08-04'
     #env = 'dev'
 
@@ -470,4 +548,4 @@ if __name__ == '__main__':
 
     #query(env, 'gold_tracks')
     #query('gold')
-    #test3()
+    test3()

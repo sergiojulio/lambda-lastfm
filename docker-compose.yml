@@ -54,15 +54,13 @@ services:
       MINIO_ROOT_PASSWORD: minio123
     volumes:
       #- /path/to/data:/data
-      - ./lastfm-warehouse:/lastfm-warehouse
-    command: server /lastfm-warehouse
+      - ./:/buckets
+    command: server /buckets --console-address ":9001"
+    networks:
+      - trino-network
 
-  minio-client:
-    image: minio/mc
-    # insure that the server container is running before building the client
-    depends_on:
-      - minio
-
+# airflow
+# streamlit
 
 volumes:
   app:

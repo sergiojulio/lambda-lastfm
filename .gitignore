@@ -133,3 +133,5 @@ dmypy.json
 ./vscode
 .vscode
 /logs
+./minio*
+.minio.sys
