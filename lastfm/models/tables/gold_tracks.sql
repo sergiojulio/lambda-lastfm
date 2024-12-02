@@ -12,7 +12,7 @@ https://docs.getdbt.com/docs/build/incremental-strategy
 {{
   config(
     materialized = 'incremental',
-    incremental_strategy = 'delete+insert',
+    incremental_strategy = 'insert_overwrite',
     unique_key = 'date',
     cluster_by = ['date']
   )
@@ -22,7 +22,8 @@ https://docs.getdbt.com/docs/build/incremental-strategy
 with source_data as (
 
     select 
-        date_format(from_unixtime("timestamp"), '%Y-%m-%d %h:%i:%s') as "datetime",
+        -- cast timestamp(6)
+        cast(date_format(from_unixtime("timestamp"), '%Y-%m-%d %h:%i:%s') as timestamp) as "datetime",
         artist,
         album,
         track,

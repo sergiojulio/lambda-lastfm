@@ -388,6 +388,7 @@ def load(env, date):
 
 
 #TRANSFORM 
+"""
 def transformation(env, date):
 
     from pyiceberg.catalog.sql import SqlCatalog
@@ -431,6 +432,29 @@ def transformation(env, date):
         update_schema.union_by_name(silver_df.schema)    
 
     gold_table.append(silver_df) 
+
+"""
+def transformation(env, date):
+
+    # run dbt model
+    from dbt.cli.main import dbtRunner, dbtRunnerResult
+
+    # initialize
+    dbt = dbtRunner()
+
+    # create CLI args as a list of strings
+    # cli_args = ["run", "--profiles-dir", "./lastfm"]
+
+    # pass target and date
+    cli_args = ["run", "--project-dir", "./lastfm"]
+
+    # run the command
+    res: dbtRunnerResult = dbt.invoke(cli_args)
+
+    # inspect the results
+    for r in res.result:
+        print(f"{r.node.name}: {r.status}")
+ 
 
 
 # streamlit dashboard
@@ -539,13 +563,13 @@ def test3():
 
 if __name__ == '__main__':
     #warehouse()
-    #date = '2024-08-04'
-    #env = 'dev'
+    date = '2024-08-04'
+    env = 'dev'
 
     #extract(env, date)
     #load(env, date)
-    #transformation(env, date)
+    transformation(env, date)
 
     #query(env, 'gold_tracks')
     #query('gold')
-    test3()
+    #test3()
