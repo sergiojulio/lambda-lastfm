@@ -12,7 +12,7 @@ https://docs.getdbt.com/docs/build/incremental-strategy
 {{
   config(
     materialized = 'incremental',
-    incremental_strategy = 'insert_overwrite',
+    incremental_strategy='insert_overwrite' if target.name == 'prd' else 'delete+insert',
     unique_key = 'date',
     cluster_by = ['date']
   )
