@@ -442,11 +442,12 @@ def transformation(env, date):
     # initialize
     dbt = dbtRunner()
 
-    # create CLI args as a list of strings
-    # cli_args = ["run", "--profiles-dir", "./lastfm"]
-
-    # pass target and date
-    cli_args = ["run", "--project-dir", "./lastfm"]
+    cli_args = [
+        "run",
+        "--project-dir", "./dbt/lastfm",
+        "--vars", f"{{'date': '{date}'}}",
+        "--target", env
+    ]
 
     # run the command
     res: dbtRunnerResult = dbt.invoke(cli_args)
@@ -455,7 +456,6 @@ def transformation(env, date):
     for r in res.result:
         print(f"{r.node.name}: {r.status}")
  
-
 
 # streamlit dashboard
 
@@ -467,15 +467,23 @@ def handler(event, context):
 
     match step:
         case "extract":
-            # 
-            return "extract"
+            statusCode, body = extract(env, date)
+            return {
+                'statusCode': statusCode,
+                'body': body
+            }
         case "load":
+            load(env, date)
             return {
                 'statusCode': 201,
-                'body': json.dumps('In My Head')
+                'body': json.dumps('In My Head!')
             }
         case "transform":
-            return "transform"
+            transformation(env, date)
+            return {
+                'statusCode': 201,
+                'body': json.dumps('In My Head!')
+            }
 
 
 def test():
@@ -560,10 +568,10 @@ def test3():
     for r in res.result:
         print(f"{r.node.name}: {r.status}")
 
-
+"""
 if __name__ == '__main__':
     #warehouse()
-    date = '2024-08-04'
+    date = '2024-08-05'
     env = 'dev'
 
     #extract(env, date)
@@ -573,3 +581,5 @@ if __name__ == '__main__':
     #query(env, 'gold_tracks')
     #query('gold')
     #test3()
+
+"""

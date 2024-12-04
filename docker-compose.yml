@@ -1,33 +1,38 @@
 version: "3.8"
 services:
-  app:
-    container_name: lastfm-elt
+  lambda:
+    container_name: lambda
     build: 
       context: ./ 
       dockerfile: ./Dockerfile
     #command: lambda_function.handler
     ports:
       # - 9000:8080 original
-      - 9090:9090
+      - 9090:8080
     volumes:
       - .:/var/task
     environment:
       - ENV=dev   
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123     
+    networks:
+      - trino-network
 
-  trino-coordinator:
+  trino:
+    container_name: trino
     image: 'trinodb/trino:latest'
-    hostname: trino-coordinator
+    hostname: trino
     ports:
       - '8080:8080'
     volumes:
       # - <host_directory>:<container_directory>:<access_mode>
-      # - ./trino/etc:/etc/trino
+      - ./trino/etc:/etc/trino
       - ./lastfm-warehouse:/lastfm-warehouse
     networks:
       - trino-network
 
   postgres:
-    container_name: postgres-db
+    container_name: postgres
     image: postgres:14.1-alpine
     #restart: always
     environment:
@@ -44,8 +49,8 @@ services:
       - trino-network
 
   minio:
-    image: minio/minio
     container_name: minio
+    image: minio/minio
     ports:
     - 9000:9000 # CLI
     - 9001:9001 # Web 

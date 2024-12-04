@@ -1,14 +1,6 @@
 /*
-    Welcome to your first dbt model!
-    Did you know that you can also configure models directly within SQL files?
-    This will override configurations stated in dbt_project.yml
-
-    Try changing "table" to "view" below
-
 https://docs.getdbt.com/docs/build/incremental-strategy
-
 */
-
 {{
   config(
     materialized = 'incremental',
@@ -42,14 +34,9 @@ limit the quantity of data pulled from the upstream models.
 */
 
     where 
-        "date" = date('2024-08-04')
+        "date" = date('{{ var('date') }}')
     {% endif %}
 )
 
 select * from source_data
 
-/*
-    Uncomment the line below to remove records with null `id` values
-*/
-
--- where id is not null
