@@ -9,48 +9,67 @@ from dotenv import load_dotenv
 
 import boto3
 
+# env dev - secrets prd
 dotenv_path = Path('.env/.venv')
 load_dotenv(dotenv_path=dotenv_path)
 
+# hidden keys
 api_key = os.getenv('LASTFM_API_KEY')
-#enviroment = os.getenv('ENVIROMENT') # dev - prd (butquet)
 aws_access_key = os.getenv('AWS_ACCESS_KEY')
 aws_secret_key = os.getenv('AWS_SECRET_KEY')
 aws_bucket_name = os.getenv('AWS_BUCKET_NAME')
 aws_account_id = os.getenv('AWS_ACCOUNT_ID')
 aws_region = os.getenv('AWS_REGION')
 # MinIO env
+minio_user = os.getenv('MINIO_ROOT_USER')
+minio_pass = os.getenv('MINIO_ROOT_PASSWORD')
+minio_endpoint = os.getenv('MINIO_ENDPOINT')
+# Postgres env
+postgres_db = os.getenv('POSTGRES_DB')
+postgres_user = os.getenv('POSTGRES_USER')
+postgres_pass = os.getenv('POSTGRES_PASSWORD')
 
-#warehouse_path = "/home/sergio/dev/docker/lambda-lastfm/lastfm-warehouse/"
 warehouse_path = "lastfm-warehouse/"
+bucket_name = "lastfm-warehouse"
 
 
-# Create de database and schematas only local
-def warehouse():
+# Create de database and schematas
+def warehouse(env):
 
-    from pyiceberg.schema import Schema
-    from pyiceberg.catalog.sql import SqlCatalog
     from pyiceberg.schema import Schema
     from pyiceberg.types import NestedField, IntegerType, StringType, DateType, TimestampType, LongType
     from pyiceberg.partitioning import PartitionSpec, PartitionField, IdentityTransform, DayTransform
 
+    if env == "dev":
+        from pyiceberg.catalog.sql import SqlCatalog
 
-    # data warehouse
+        catalog = SqlCatalog(
+            "lastfm",
+            **{
+                "uri": f"postgresql+psycopg2://{postgres_user}:{postgres_pass}@localhost/{postgres_db}",
+                "warehouse": f"s3://{warehouse_path}",
+                "s3.endpoint": minio_endpoint,
+                "s3.access-key-id": minio_user,
+                "s3.secret-access-key": minio_pass,
+            },
+        )
+    else:
+        from pyiceberg.catalog import load_catalog
 
-    catalog = SqlCatalog(
-        "lastfm",
-        **{
-            "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
-            "warehouse": f"s3://{warehouse_path}",
-            "s3.endpoint": "http://localhost:9000",
-            "s3.access-key-id": "minio",
-            "s3.secret-access-key": "minio123",
-        },
-    )  
-    catalog.create_namespace("lastfm")
+        catalog = load_catalog(
+            "default", 
+            **{
+                "type": "glue",
+                "s3.access-key-id": aws_access_key,
+                "s3.secret-access-key": aws_secret_key,
+                "s3.region": aws_region
+                }
+            )
 
-     # processing   
+    # check if exists
+    catalog.create_namespace("lastfm") 
 
+     # stage   
     schema = Schema(
         NestedField(field_id=1, name='timestamp', field_type=LongType(), required=False),
         NestedField(field_id=2, name='date_text', field_type=StringType(), required=False),
@@ -63,7 +82,6 @@ def warehouse():
         NestedField(field_id=9, name='date', field_type=DateType(), required=False)
     )
 
-    #catalog.create_namespace("silver")
 
     partition_spec = PartitionSpec(PartitionField(source_id=9, field_id=9, transform=IdentityTransform(), name="date"), spec_id=1)
 
@@ -74,7 +92,6 @@ def warehouse():
     ) 
 
     # consumption
-    
     schema = Schema(
         NestedField(field_id=1, name='datetime', field_type=TimestampType(), required=False),
         NestedField(field_id=2, name='artist', field_type=StringType(), required=False),
@@ -83,7 +100,6 @@ def warehouse():
         NestedField(field_id=5, name='date', field_type=DateType(), required=False)
     )
 
-    #catalog.create_namespace("gold")
 
     partition_spec = PartitionSpec(PartitionField(source_id=5, field_id=5, transform=IdentityTransform(), name="date"), spec_id=1)
 
@@ -94,7 +110,7 @@ def warehouse():
     ) 
 
 
-def drop_table():
+def drop_table(env):
 
     from pyiceberg.catalog.sql import SqlCatalog
 
@@ -137,8 +153,8 @@ def query(env, table_name):
 
 #EXTRACT
 def extract(env, date):
-    try:
 
+    try:
         # date to timestamp
         date_from = date + ' 00:00:00'
         date_to = date + ' 23:59:59'
@@ -163,71 +179,73 @@ def extract(env, date):
 
         while i < pages:
             i += 1
-            # return list
             list = get_tracks(start=date_from, end=date_to, page=c)
             c -= 1
             lists = lists + str(list)
             
-
-        # if env
         if env == 'dev':
+
             # local file system
             # with open('./lastfm-warehouse/raw/tracks-' + date + '.csv', 'w') as f:
             #     f.write(lists)
             #     f.close()
-            # MinIO
 
-            # Define your MinIO credentials and endpoint
-            minio_endpoint = "http://localhost:9000"  # Replace with your MinIO URL
-            access_key = "minio"
-            secret_key = "minio123"
-            bucket_name = "lastfm-warehouse"
-            file_name = 'raw/tracks-' + date + '.csv'
+            file_name = f"raw/tracks-{date}.csv"
 
-            # Initialize the MinIO client
             s3_client = boto3.client(
                 's3',
                 endpoint_url=minio_endpoint,
-                aws_access_key_id=access_key,
-                aws_secret_access_key=secret_key,
+                aws_access_key_id=minio_user,
+                aws_secret_access_key=minio_pass,
             )
 
-            # Upload the CSV file to MinIO
             try:
                 s3_client.put_object(
                     Bucket=bucket_name,
                     Key=file_name,
                     Body=lists
                 )
-                print(f"File '{file_name}' uploaded successfully to bucket '{bucket_name}'.")
+                message = f"File '{file_name}' uploaded successfully to bucket '{bucket_name}'."
+                status = 200
             except Exception as e:
-                print(f"Error uploading file: {e}")
-
-
+                message = f"Error uploading file: {e}"
+                status = 500
         else:
             s3_client = boto3.client('s3')
-            # try
-            s3_client.put_object(
-                Bucket='lastfm-warehouse', 
-                Key='raw/tracks-' + date + '.csv', 
-                Body=lists,
-            )
 
+            try:
+                s3_client.put_object(
+                    Bucket=bucket_name, 
+                    Key=file_name, 
+                    Body=lists,
+                )
+                message = f"File '{file_name}' uploaded successfully to bucket '{bucket_name}'."
+                status = 200
+            except Exception as e:
+                message = f"Error uploading file: {e}"
+                status = 500
 
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+
+        message = f'HTTP error occurred: {http_err}'
+        status = 500
+
     except Exception as err:
-        print(f'Other error occurred 1: {err}')
+
+        message = f'Other error occurred: {err}'
+        status = 500
         # error details
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-    
+        # exc_type, exc_obj, exc_tb = sys.exc_info()
+        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # print(exc_type, fname, exc_tb.tb_lineno)
+
+    # return dictionary
+    return { 'statusCode' : status, 'body' : message }
+
 
 def get_tracks(start, end, page):
     
     try:
-        # request
         response = requests.get('https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=' + 
                                 str(api_key) + '&from=' + str(start) + '&to=' +  str(end) + '&page=' + str(page) + '&format=json')
     
@@ -254,138 +272,121 @@ def get_tracks(start, end, page):
         return lists
     
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        message = f'HTTP error occurred ite.: {http_err}'
+        status = 500
+        return { 'statusCode' : status, 'body' : message }
     except Exception as err:
-        print(f'Other error occurred 2: {err}')
+        message = f'Other error occurred ite.: {err}'
+        status = 500
+        return { 'statusCode' : status, 'body' : message }
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-    
-    return True
+        #exc_type, exc_obj, exc_tb = sys.exc_info()
+        #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        #print(exc_type, fname, exc_tb.tb_lineno)
 
 
 #LOAD
 def load(env, date):
 
     from datetime import date as dt
-    from pyiceberg.catalog.sql import SqlCatalog
+
+    
+    from pyiceberg.catalog import load_catalog
+
     from pyiceberg.expressions import NotEqualTo   
     import pyarrow as pa
     import pyarrow.csv as pc
+    import pyarrow.fs as fs
 
-    
+    file_name = f"raw/tracks-{date}.csv"
+    # Full S3 path to the file
+    s3_file_path = f"{bucket_name}/{file_name}"   
 
     if env == "dev":
 
-        # catalog = SqlCatalog(
-        #     "lastfm",
-        #     **{
-        #         "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
-        #         "warehouse": f"file://{warehouse_path}",
-        #     },
-        # )  
+        from pyiceberg.catalog.sql import SqlCatalog
 
         catalog = SqlCatalog(
             "lastfm",
             **{
-                "uri": f"postgresql+psycopg2://postgres:postgres@localhost/pyiceberg_catalog",
+                "uri": f"postgresql+psycopg2://{postgres_user}:{postgres_pass}@localhost/{postgres_db}",
                 "warehouse": f"s3://{warehouse_path}",
-                "s3.endpoint": "http://localhost:9000",
-                "s3.access-key-id": "minio",
-                "s3.secret-access-key": "minio123",
-            },
+                "s3.endpoint": minio_endpoint,
+                "s3.access-key-id": minio_user,
+                "s3.secret-access-key": minio_pass,
+            }
         )
-
-
-        table = catalog.load_table("lastfm.silver_tracks")
-
-        df = table.scan(
-            row_filter = NotEqualTo("date", date)
-        ).to_arrow()  
-
-        table.overwrite(df) 
-
-
-        import pyarrow.fs as fs
-
-        minio_endpoint = "http://localhost:9000"  # Replace with your MinIO URL
-        access_key = "minio"
-        secret_key = "minio123"
-        bucket_name = "lastfm-warehouse"
-        file_name = 'raw/tracks-' + date + '.csv'
-
         s3 = fs.S3FileSystem(
-                region="us-east-1",
-                access_key = "minio",
-                secret_key = "minio123",
-                endpoint_override="http://localhost:9000"
-            )  # Specify the region of your S3 bucket
-
-        # Full S3 path to the file
-        s3_file_path = f"{bucket_name}/{file_name}"
-
-        # Open the file and read it using pyarrow
-        try:
-            with s3.open_input_file(s3_file_path) as file:
-                df = pc.read_csv(file)  # Read the CSV file into a PyArrow Table
-                #print(table)
-        except Exception as e:
-            print(f"Error reading CSV file: {e}")
-
-
-        #df = pc.read_csv(warehouse_path + "/raw/tracks-" + date + ".csv")
-
-
-
-        year, month, day = map(int, date.split('-'))
-
-        df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
-
-        table.append(df)   
+                region = aws_region,
+                access_key = minio_user,
+                secret_key = minio_pass,
+                endpoint_override = minio_endpoint
+            )
 
     else:
 
         from pyiceberg.catalog import load_catalog
-        import pyarrow.fs as fs
 
-        catalog = load_catalog('default', 
-                            **{
-                                    "type": "glue",
-                                    "s3.access-key-id": aws_access_key,
-                                    "s3.secret-access-key": aws_secret_key,
-                                    "s3.region": "us-east-1"
-                                }
-                            )
+        catalog = load_catalog(
+                "default", 
+                **{
+                    "type": "glue",
+                    "s3.access-key-id": aws_access_key,
+                    "s3.secret-access-key": aws_secret_key,
+                    "s3.region": aws_region
+                    }
+                )
 
-        table = catalog.load_table("lastfm.silver_tracks")
+        s3 = fs.S3FileSystem(
+                region=aws_region
+            )  
 
-        # delete rows!
-        df = table.scan(
-            row_filter = NotEqualTo("date", date)
-        ).to_arrow()  
 
+    table = catalog.load_table("lastfm.silver_tracks")
+
+
+    df = table.scan(
+        row_filter = NotEqualTo("date", date)
+    ).to_arrow()  
+
+    try:
         table.overwrite(df) 
-        # 
-        
-        # s3_client = boto3.client('s3')
-        # response = s3_client.get_object(Bucket='lastfm-warehouse', Key='raw/tracks-' + date + '.csv')
-        # csv_data = response['Body'].read().decode('utf-8')
-        s3 = fs.S3FileSystem(region=aws_region)  # Specify the region of your S3 bucket
 
-        # Open the S3 file
-        with s3.open_input_file("lastfm-warehouse/raw/tracks-" + date + ".csv") as file:
-            # Read the CSV file into a PyArrow Table
-            df = pc.read_csv(file)
+    except Exception as e:
+
+        message = f"Error deleting data to stage table {e}"
+        status = 500
+        return { 'statusCode' : status, 'body' : message }
+
+    try:
+        with s3.open_input_file(s3_file_path) as file:
+
+            df = pc.read_csv(file)  
+
+    except Exception as e:
+
+        message = f"Error reading CSV file: {e}"
+        status = 500
+        return { 'statusCode' : status, 'body' : message }
 
 
-        year, month, day = map(int, date.split('-'))
+    year, month, day = map(int, date.split('-'))
 
-        df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
+    df = df.append_column("date", pa.array([dt(year, month, day)] * len(df), pa.date32()))
 
-        # write iceberg data
-        table.append(df)                        
+    try:
+        table.append(df)
+        rows = df.count_rows()
 
+    except Exception as e:
+
+        message = f"Error appending data to stage table {e}"
+        status = 500
+        return { 'statusCode' : status, 'body' : message }
+
+    message = f"successfully added {rows} to stage table."
+    status = 200          
+    return { 'statusCode' : status, 'body' : message }
 
 #TRANSFORM 
 """
@@ -467,16 +468,16 @@ def handler(event, context):
 
     match step:
         case "extract":
-            statusCode, body = extract(env, date)
+            response = extract(env, date)
             return {
-                'statusCode': statusCode,
-                'body': body
+                'statusCode': response['statusCode'],
+                'body': response['body']
             }
         case "load":
-            load(env, date)
+            response = load(env, date)
             return {
-                'statusCode': 201,
-                'body': json.dumps('In My Head!')
+                'statusCode': response['statusCode'],
+                'body': response['body']
             }
         case "transform":
             transformation(env, date)

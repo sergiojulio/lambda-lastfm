@@ -12,9 +12,14 @@ services:
     volumes:
       - .:/var/task
     environment:
+    # prd aws secrects
       - ENV=dev   
       - MINIO_ROOT_USER=minio
-      - MINIO_ROOT_PASSWORD=minio123     
+      - MINIO_ROOT_PASSWORD=minio123   
+      - MINIO_ENDPOINT=http://minio:9000  
+      - POSTGRES_DB=postgres_catalog
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     networks:
       - trino-network
 

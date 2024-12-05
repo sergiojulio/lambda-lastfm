@@ -3,3 +3,8 @@ pyarrow
 pyiceberg
 requests
 python-dotenv
+SQLAlchemy
+dbt-core
+dbt-athena-community
+dbt-trino
+psycopg2
