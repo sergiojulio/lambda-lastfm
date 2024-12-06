@@ -7,4 +7,5 @@ SQLAlchemy
 dbt-core
 dbt-athena-community
 dbt-trino
-psycopg2
+psycopg2-binary
+

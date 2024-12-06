@@ -297,6 +297,7 @@ def load(env, date):
     import pyarrow as pa
     import pyarrow.csv as pc
     import pyarrow.fs as fs
+    #import pyarrow.compute as pc
 
     file_name = f"raw/tracks-{date}.csv"
     # Full S3 path to the file
@@ -309,7 +310,7 @@ def load(env, date):
         catalog = SqlCatalog(
             "lastfm",
             **{
-                "uri": f"postgresql+psycopg2://{postgres_user}:{postgres_pass}@localhost/{postgres_db}",
+                "uri": f"postgresql+psycopg2://{postgres_user}:{postgres_pass}@postgres/{postgres_db}",
                 "warehouse": f"s3://{warehouse_path}",
                 "s3.endpoint": minio_endpoint,
                 "s3.access-key-id": minio_user,
@@ -350,6 +351,7 @@ def load(env, date):
     ).to_arrow()  
 
     try:
+        # rollback
         table.overwrite(df) 
 
     except Exception as e:
@@ -376,15 +378,16 @@ def load(env, date):
 
     try:
         table.append(df)
-        rows = df.count_rows()
+        rows = len(df)
 
     except Exception as e:
 
         message = f"Error appending data to stage table {e}"
         status = 500
         return { 'statusCode' : status, 'body' : message }
+    
 
-    message = f"successfully added {rows} to stage table."
+    message = f"successfully added {rows}rows to stage table."
     status = 200          
     return { 'statusCode' : status, 'body' : message }
 
@@ -443,20 +446,35 @@ def transformation(env, date):
     # initialize
     dbt = dbtRunner()
 
+    # add profile.yml
+
     cli_args = [
         "run",
         "--project-dir", "./dbt/lastfm",
+        "--profiles-dir", "./dbt/lastfm",
         "--vars", f"{{'date': '{date}'}}",
         "--target", env
     ]
 
-    # run the command
-    res: dbtRunnerResult = dbt.invoke(cli_args)
+    try:
+        # run the command
+        res: dbtRunnerResult = dbt.invoke(cli_args)
 
-    # inspect the results
-    for r in res.result:
-        print(f"{r.node.name}: {r.status}")
- 
+        # inspect the results
+        for r in res.result:
+            print(f"{r.node.name}: {r.status}")
+
+    except Exception as e:
+
+        message = f"Error appending data to final table {e}"
+        status = 500
+        return { 'statusCode' : status, 'body' : message } 
+    
+    message = f"successfully added rows to final table."
+    status = 200          
+    return { 'statusCode' : status, 'body' : message }
+
+
 
 # streamlit dashboard
 
@@ -479,11 +497,11 @@ def handler(event, context):
                 'statusCode': response['statusCode'],
                 'body': response['body']
             }
-        case "transform":
-            transformation(env, date)
+        case "transformation":
+            response = transformation(env, date)
             return {
-                'statusCode': 201,
-                'body': json.dumps('In My Head!')
+                'statusCode': response['statusCode'],
+                'body': response['body']
             }
 
 
