@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import os, sys
+import os
 import requests
-import json
 from datetime import datetime, timezone
 from requests.exceptions import HTTPError
 from pathlib import Path
@@ -9,17 +8,17 @@ from dotenv import load_dotenv
 
 import boto3
 
-# env dev - secrets prd
+# env dev - secrets prd - REMOVED -
 dotenv_path = Path('.env/.venv')
 load_dotenv(dotenv_path=dotenv_path)
-
+# 
 # hidden keys
-api_key = os.getenv('LASTFM_API_KEY')
-aws_access_key = os.getenv('AWS_ACCESS_KEY')
-aws_secret_key = os.getenv('AWS_SECRET_KEY')
-aws_bucket_name = os.getenv('AWS_BUCKET_NAME')
-aws_account_id = os.getenv('AWS_ACCOUNT_ID')
+lastfm_api_key = os.getenv('LASTFM_API_KEY')
+aws_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+aws_secret_key = os.getenv('AWS_ACCESS_KEY_ID')
+#
 aws_region = os.getenv('AWS_REGION')
+#aws_region = "us-east-1"
 # MinIO env
 minio_user = os.getenv('MINIO_ROOT_USER')
 minio_pass = os.getenv('MINIO_ROOT_PASSWORD')
@@ -28,7 +27,7 @@ minio_endpoint = os.getenv('MINIO_ENDPOINT')
 postgres_db = os.getenv('POSTGRES_DB')
 postgres_user = os.getenv('POSTGRES_USER')
 postgres_pass = os.getenv('POSTGRES_PASSWORD')
-
+#
 warehouse_path = "lastfm-warehouse/"
 bucket_name = "lastfm-warehouse"
 
@@ -41,6 +40,7 @@ def warehouse(env):
     from pyiceberg.partitioning import PartitionSpec, PartitionField, IdentityTransform, DayTransform
 
     if env == "dev":
+
         from pyiceberg.catalog.sql import SqlCatalog
 
         catalog = SqlCatalog(
@@ -53,7 +53,9 @@ def warehouse(env):
                 "s3.secret-access-key": minio_pass,
             },
         )
+
     else:
+
         from pyiceberg.catalog import load_catalog
 
         catalog = load_catalog(
@@ -67,6 +69,7 @@ def warehouse(env):
             )
 
     # check if exists
+    # catalog.table_exists("docs_example.bids")
     catalog.create_namespace("lastfm") 
 
      # stage   
@@ -166,7 +169,7 @@ def extract(env, date):
         date_to = int(dt.replace(tzinfo=timezone.utc).timestamp())
 
         response = requests.get("https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=" + 
-                                str(api_key) + "&from=" + str(date_from) + "&to=" + str(date_to) + "&format=json")
+                                str(lastfm_api_key) + "&from=" + str(date_from) + "&to=" + str(date_to) + "&format=json")
 
         response.raise_for_status()
         json_response = response.json()
@@ -176,6 +179,8 @@ def extract(env, date):
         c = pages
 
         lists = 'timestamp,date_text,artist,artist_mbid,album,album_mbid,track,track_mbid\n'
+
+        file_name = f"raw/tracks-{date}.csv"
 
         while i < pages:
             i += 1
@@ -189,8 +194,6 @@ def extract(env, date):
             # with open('./lastfm-warehouse/raw/tracks-' + date + '.csv', 'w') as f:
             #     f.write(lists)
             #     f.close()
-
-            file_name = f"raw/tracks-{date}.csv"
 
             s3_client = boto3.client(
                 's3',
@@ -211,7 +214,13 @@ def extract(env, date):
                 message = f"Error uploading file: {e}"
                 status = 500
         else:
-            s3_client = boto3.client('s3')
+            # put credentials
+            s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=aws_access_key,
+                    aws_secret_access_key=aws_secret_key,
+                    region_name=aws_region
+                )
 
             try:
                 s3_client.put_object(
@@ -247,7 +256,7 @@ def get_tracks(start, end, page):
     
     try:
         response = requests.get('https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=radioheadve&api_key=' + 
-                                str(api_key) + '&from=' + str(start) + '&to=' +  str(end) + '&page=' + str(page) + '&format=json')
+                                str(lastfm_api_key) + '&from=' + str(start) + '&to=' +  str(end) + '&page=' + str(page) + '&format=json')
     
         lists = ''
 
@@ -332,6 +341,9 @@ def load(env, date):
                 "default", 
                 **{
                     "type": "glue",
+                    #"glue.region": aws_region,
+                    #"glue.access-key-id": aws_access_key,
+                    #"glue.secret-access-key": aws_secret_key,
                     "s3.access-key-id": aws_access_key,
                     "s3.secret-access-key": aws_secret_key,
                     "s3.region": aws_region
@@ -339,7 +351,9 @@ def load(env, date):
                 )
 
         s3 = fs.S3FileSystem(
-                region=aws_region
+                region = aws_region,
+                access_key = aws_access_key,
+                secret_key = aws_secret_key              
             )  
 
 
@@ -387,7 +401,7 @@ def load(env, date):
         return { 'statusCode' : status, 'body' : message }
     
 
-    message = f"successfully added {rows}rows to stage table."
+    message = f"successfully added {rows} rows to stage table."
     status = 200          
     return { 'statusCode' : status, 'body' : message }
 
@@ -590,15 +604,16 @@ def test3():
 """
 if __name__ == '__main__':
     #warehouse()
-    date = '2024-08-05'
-    env = 'dev'
+    date = '2024-08-03'
+    env = 'prd'
 
     #extract(env, date)
-    #load(env, date)
-    transformation(env, date)
+    #print(load(env, date))
+    #print(transformation(env, date))
 
     #query(env, 'gold_tracks')
     #query('gold')
     #test3()
-
 """
+
+

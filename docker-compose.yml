@@ -10,9 +10,13 @@ services:
       # - 9000:8080 original
       - 9090:8080
     volumes:
-      - .:/var/task
+      - .:/var/task # SHOULD NOT
     environment:
     # prd aws secrects
+    #   - AWS_ACCESS_KEY_ID
+    #   - AWS_SECRET_ACCESS_KEY
+    #   - LASTFM_API_KEY
+    #
       - ENV=dev   
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123   
@@ -80,3 +84,10 @@ volumes:
 networks:
   trino-network:
     driver: bridge
+
+# secrets
+secrets:
+   db_password:
+     file: db_password.txt
+   db_root_password:
+     file: db_root_password.txt
