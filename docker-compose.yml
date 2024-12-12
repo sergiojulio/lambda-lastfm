@@ -6,6 +6,8 @@ services:
       context: ./ 
       dockerfile: ./Dockerfile
     #command: lambda_function.handler
+    env_file:
+      - .env/.venv
     ports:
       # - 9000:8080 original
       - 9090:8080

@@ -14,10 +14,9 @@ load_dotenv(dotenv_path=dotenv_path)
 # 
 # hidden keys
 lastfm_api_key = os.getenv('LASTFM_API_KEY')
-aws_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-aws_secret_key = os.getenv('AWS_ACCESS_KEY_ID')
-#
-aws_region = os.getenv('AWS_REGION')
+aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+aws_region = os.getenv('AWS_DEFAULT_REGION')
 #aws_region = "us-east-1"
 # MinIO env
 minio_user = os.getenv('MINIO_ROOT_USER')
@@ -344,9 +343,10 @@ def load(env, date):
                     #"glue.region": aws_region,
                     #"glue.access-key-id": aws_access_key,
                     #"glue.secret-access-key": aws_secret_key,
-                    "s3.access-key-id": aws_access_key,
-                    "s3.secret-access-key": aws_secret_key,
-                    "s3.region": aws_region
+                    #"s3.access-key-id": aws_access_key,
+                    #"s3.secret-access-key": aws_secret_key,
+                    #"s3.region": aws_region,
+                    #"profile_name": "default"
                     }
                 )
 
@@ -356,7 +356,7 @@ def load(env, date):
                 secret_key = aws_secret_key              
             )  
 
-
+    # boto3 env aws vars problem
     table = catalog.load_table("lastfm.silver_tracks")
 
 
@@ -604,16 +604,18 @@ def test3():
 """
 if __name__ == '__main__':
     #warehouse()
-    date = '2024-08-03'
+    date = '2024-08-05'
     env = 'prd'
 
-    #extract(env, date)
+    #print(extract(env, date))
     #print(load(env, date))
-    #print(transformation(env, date))
+    print(transformation(env, date))
 
     #query(env, 'gold_tracks')
     #query('gold')
     #test3()
 """
+
+
 
 
