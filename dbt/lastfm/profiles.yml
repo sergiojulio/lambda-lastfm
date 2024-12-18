@@ -13,7 +13,7 @@ lastfm:
     dev:
       type: trino
       user: trino
-      password: 
+      password: trino
       host: trino
       database: iceberg
       schema: lastfm

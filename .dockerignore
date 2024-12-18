@@ -92,3 +92,8 @@ venv/
 */*/*.swp
 */*/*/*.swp
  
+# /dbt/lastfm/target
+# /dbt/lastfm/logs/dbt.log
+# /dbt/logs/dbt.log
+
+.minio.sys

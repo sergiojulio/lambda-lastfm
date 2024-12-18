@@ -14,10 +14,13 @@ load_dotenv(dotenv_path=dotenv_path)
 # 
 # hidden keys
 lastfm_api_key = os.getenv('LASTFM_API_KEY')
-aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
-aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-aws_region = os.getenv('AWS_DEFAULT_REGION')
-#aws_region = "us-east-1"
+
+# aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+# aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+# aws_region = os.getenv('AWS_DEFAULT_REGION')
+
+aws_region = "us-east-1"
+
 # MinIO env
 minio_user = os.getenv('MINIO_ROOT_USER')
 minio_pass = os.getenv('MINIO_ROOT_PASSWORD')
@@ -213,12 +216,9 @@ def extract(env, date):
                 message = f"Error uploading file: {e}"
                 status = 500
         else:
-            # put credentials
+            # remove credentials
             s3_client = boto3.client(
-                    's3',
-                    aws_access_key_id=aws_access_key,
-                    aws_secret_access_key=aws_secret_key,
-                    region_name=aws_region
+                    's3'
                 )
 
             try:
@@ -350,10 +350,9 @@ def load(env, date):
                     }
                 )
 
+        # s3_fs = fs.S3FileSystem(region='$region', retry_strategy=self_defined_retry)
         s3 = fs.S3FileSystem(
-                region = aws_region,
-                access_key = aws_access_key,
-                secret_key = aws_secret_key              
+                region = aws_region          
             )  
 
     # boto3 env aws vars problem
@@ -467,7 +466,9 @@ def transformation(env, date):
         "--project-dir", "./dbt/lastfm",
         "--profiles-dir", "./dbt/lastfm",
         "--vars", f"{{'date': '{date}'}}",
-        "--target", env
+        "--target", env,
+        "--log-level-file", "none",
+        "--partial-parse"
     ]
 
     try:
@@ -601,11 +602,11 @@ def test3():
     for r in res.result:
         print(f"{r.node.name}: {r.status}")
 
-"""
+
 if __name__ == '__main__':
     #warehouse()
     date = '2024-08-05'
-    env = 'prd'
+    env = 'dev'
 
     #print(extract(env, date))
     #print(load(env, date))
@@ -614,7 +615,7 @@ if __name__ == '__main__':
     #query(env, 'gold_tracks')
     #query('gold')
     #test3()
-"""
+
 
 
 

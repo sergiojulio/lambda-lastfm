@@ -12,8 +12,11 @@ RUN pip install -r requirements.txt
 # Copy function code
 COPY lambda_function.py ${LAMBDA_TASK_ROOT}
 
-COPY dbt ${LAMBDA_TASK_ROOT}
 # dbt project folder
+COPY ./dbt ${LAMBDA_TASK_ROOT}/dbt
+
+# allow rw
+RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/dbt/lastfm
 
 # aws - lastfm ev vars -> secrets
 

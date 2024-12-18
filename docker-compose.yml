@@ -13,6 +13,7 @@ services:
       - 9090:8080
     volumes:
       - .:/var/task # SHOULD NOT
+      - $HOME/.aws/:/root/.aws:ro    
     environment:
     # prd aws secrects
     #   - AWS_ACCESS_KEY_ID
