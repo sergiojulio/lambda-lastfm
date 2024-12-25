@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import os, sys
 import requests
 from datetime import datetime, timezone
 from requests.exceptions import HTTPError
@@ -490,9 +490,6 @@ def transformation(env, date):
     return { 'statusCode' : status, 'body' : message }
 
 
-
-# streamlit dashboard
-
 def handler(event, context):
     # step date env
     step = event['step']
@@ -514,11 +511,13 @@ def handler(event, context):
             }
         case "transformation":
             response = transformation(env, date)
+            # delete infrastructure
             return {
                 'statusCode': response['statusCode'],
                 'body': response['body']
             }
 
+    # response to topic sqs
 
 def test():
     import boto3
@@ -602,19 +601,54 @@ def test3():
     for r in res.result:
         print(f"{r.node.name}: {r.status}")
 
+# def lambda_transformation buuild with boto3 infra yask manaer anda pass date
+
+def main():
+    # Default values
+    default_values = {
+        "step": "extract",
+        "date": "2024-08-04",
+        "env": "prd"
+    }
+
+    # Determine values from command-line arguments or environment variables
+    if len(sys.argv) > 3:
+
+        step, date, env = sys.argv[1], sys.argv[2], sys.argv[3]
+
+    elif all(os.environ.get(key) for key in ["step", "date", "env"]):
+
+        step = os.environ["step"]
+        date = os.environ["date"]
+        env = os.environ["env"]
+
+    else:
+        
+        step, date, env = default_values["step"], default_values["date"], default_values["env"]
+
+    # Construct the event dictionary
+    event = {"step": step, "date": date, "env": env}
+
+    # Call the handler function
+    handler(event, None)
+
 
 if __name__ == '__main__':
     #warehouse()
-    date = '2024-08-05'
-    env = 'dev'
+    main()
 
+    # curl "http://localhost:8080/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-08-04","env":"prd"}'
+
+    
     #print(extract(env, date))
     #print(load(env, date))
-    print(transformation(env, date))
+    #print(transformation(env, date))
 
     #query(env, 'gold_tracks')
     #query('gold')
     #test3()
+
+
 
 
 
