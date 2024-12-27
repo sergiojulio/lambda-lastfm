@@ -604,33 +604,41 @@ def test3():
 # def lambda_transformation buuild with boto3 infra yask manaer anda pass date
 
 def main():
-    # Default values
-    default_values = {
-        "step": "extract",
-        "date": "2024-08-04",
-        "env": "prd"
-    }
+
 
     # Determine values from command-line arguments or environment variables
     if len(sys.argv) > 3:
 
         step, date, env = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    elif all(os.environ.get(key) for key in ["step", "date", "env"]):
+        # Construct the event dictionary
+        event = {"step": step, "date": date, "env": env}
 
-        step = os.environ["step"]
-        date = os.environ["date"]
-        env = os.environ["env"]
+        # Call the handler function
+        print(handler(event, None))
+
+    elif all(os.environ.get(key) for key in ["STEP", "DATE", "ENV"]):
+
+        step = os.environ["STEP"]
+        date = os.environ["DATE"]
+        env = os.environ["ENV"]
+        # Construct the event dictionary
+        event = {"step": step, "date": date, "env": env}
+
+        # Call the handler function
+        print(handler(event, None))
 
     else:
-        
-        step, date, env = default_values["step"], default_values["date"], default_values["env"]
+        # Default values
+        event = {
+            "step": "extract",
+            "date": "2024-08-04",
+            "env": "prd"
+        }
+        step, date, env = event["step"], event["date"], event["env"]
+        # Call the handler function
+        print(handler(event, None))
 
-    # Construct the event dictionary
-    event = {"step": step, "date": date, "env": env}
-
-    # Call the handler function
-    handler(event, None)
 
 
 if __name__ == '__main__':

@@ -21,4 +21,5 @@ RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/dbt/lastfm
 # aws - lastfm ev vars -> secrets
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
-CMD [ "lambda_function.handler" ]
+#CMD [ "lambda_function.handler" ]
+ENTRYPOINT [ "python", "./lambda_function.py"]
