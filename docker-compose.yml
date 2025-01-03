@@ -19,7 +19,6 @@ services:
     #   - AWS_ACCESS_KEY_ID
     #   - AWS_SECRET_ACCESS_KEY
     #   - LASTFM_API_KEY
-    #
       - ENV=dev   
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123   
@@ -30,7 +29,6 @@ services:
       - POSTGRES_SERVER=postgres
     networks:
       - trino-network
-
   trino:
     container_name: trino
     image: 'trinodb/trino:latest'
@@ -43,7 +41,6 @@ services:
       - ./lastfm-warehouse:/lastfm-warehouse
     networks:
       - trino-network
-
   postgres:
     container_name: postgres
     image: postgres:14.1-alpine
@@ -60,7 +57,6 @@ services:
       # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - trino-network
-
   minio:
     container_name: minio
     image: minio/minio
@@ -76,18 +72,14 @@ services:
     command: server /buckets --console-address ":9001"
     networks:
       - trino-network
-
 # airflow
 # streamlit
-
 volumes:
   app:
     driver: local
-
 networks:
   trino-network:
     driver: bridge
-
 # secrets
 secrets:
    db_password:
