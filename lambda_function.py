@@ -460,7 +460,6 @@ def transformation(env, date):
     dbt = dbtRunner()
 
     # add profile.yml
-
     cli_args = [
         "run",
         "--project-dir", "./dbt/lastfm",
