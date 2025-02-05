@@ -410,7 +410,6 @@ def transformation(env, date):
 
     from pyiceberg.catalog.sql import SqlCatalog
     from pyiceberg.expressions import EqualTo, NotEqualTo
-
     import pyarrow as pa
     import pyarrow.compute as pc
 
