@@ -448,7 +448,6 @@ def transformation(env, date):
         update_schema.union_by_name(silver_df.schema)    
 
     gold_table.append(silver_df) 
-
 """
 def transformation(env, date):
 
