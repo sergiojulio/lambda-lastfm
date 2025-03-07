@@ -20,7 +20,6 @@ lastfm_api_key = os.getenv('LASTFM_API_KEY')
 # aws_region = os.getenv('AWS_DEFAULT_REGION')
 
 aws_region = "us-east-1"
-
 # MinIO env
 minio_user = os.getenv('MINIO_ROOT_USER')
 minio_pass = os.getenv('MINIO_ROOT_PASSWORD')
