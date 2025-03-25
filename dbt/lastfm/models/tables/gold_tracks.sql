@@ -10,7 +10,6 @@ https://docs.getdbt.com/docs/build/incremental-strategy
   )
 }}
 
-
 with source_data as (
 
     select 
