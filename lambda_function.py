@@ -62,11 +62,8 @@ def warehouse(env):
         catalog = load_catalog(
             "default", 
             **{
-                "type": "glue",
-                "s3.access-key-id": aws_access_key,
-                "s3.secret-access-key": aws_secret_key,
-                "s3.region": aws_region
-                }
+                "type": "glue"
+              }
             )
 
     # check if exists
@@ -551,10 +548,7 @@ def test2():
     # Load the AWS Glue catalog (or AWS Athena catalog)
     catalog = load_catalog('default', 
                           **{
-                                "type": "glue",
-                                "s3.access-key-id": aws_access_key,
-                                "s3.secret-access-key": aws_secret_key,
-                                "s3.region": "us-east-1"
+                                "type": "glue"
                             }
                           )
 
