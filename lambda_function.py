@@ -579,7 +579,7 @@ def test3():
 
     # initialize
     dbt = dbtRunner()
-
+    s=2
     # create CLI args as a list of strings
     # cli_args = ["run", "--profiles-dir", "./lastfm"]
     cli_args = ["run", "--project-dir", "./lastfm"]
