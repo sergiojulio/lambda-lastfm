@@ -150,7 +150,7 @@ def query(env, table_name):
     con.sql(
         "SELECT date, COUNT(*) total FROM " + table_name + " GROUP BY date ORDER BY date ASC"
     ).show()
-      
+    
 
 #EXTRACT
 def extract(env, date):
