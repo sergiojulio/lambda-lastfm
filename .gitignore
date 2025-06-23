@@ -136,3 +136,6 @@ dmypy.json
 ./minio*
 .minio.sys
 /dbt/logs
+/airflow/logs
+/redis
+/airflow/secrets

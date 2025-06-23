@@ -509,7 +509,16 @@ def handler(event, context):
                 'statusCode': response['statusCode'],
                 'body': response['body']
             }
-
+        case "":
+            # nothing to do
+            response = {
+                'statusCode': 200,
+                'body': 'No step provided, nothing to do.'
+            }
+            return {
+                'statusCode': response['statusCode'],
+                'body': response['body']
+            }
     # response to topic sqs
 
 def test():
@@ -620,12 +629,13 @@ def main():
 
     else:
         # Default values
+        # loop waiting for event
         event = {
-            "step": "extract",
-            "date": "2024-08-04",
-            "env": "prd"
+            "step": "",
+            "date": "",
+            "env": ""
         }
-        step, date, env = event["step"], event["date"], event["env"]
+        #step, date, env = event["step"], event["date"], event["env"]
         # Call the handler function
         print(handler(event, None))
 
@@ -635,6 +645,7 @@ if __name__ == '__main__':
     #warehouse()
     main()
 
+    # airflow
     # curl "http://localhost:8080/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-08-04","env":"prd"}'
 
     

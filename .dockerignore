@@ -97,3 +97,4 @@ venv/
 # /dbt/logs/dbt.log
 
 .minio.sys
+/redis
