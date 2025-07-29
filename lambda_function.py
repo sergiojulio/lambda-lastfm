@@ -15,10 +15,6 @@ load_dotenv(dotenv_path=dotenv_path)
 # hidden keys
 lastfm_api_key = os.getenv('LASTFM_API_KEY')
 
-# aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
-# aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-# aws_region = os.getenv('AWS_DEFAULT_REGION')
-
 aws_region = "us-east-1"
 # MinIO env
 minio_user = os.getenv('MINIO_ROOT_USER')
@@ -600,7 +596,6 @@ def test3():
     for r in res.result:
         print(f"{r.node.name}: {r.status}")
 
-# def lambda_transformation buuild with boto3 infra yask manaer anda pass date
 
 def main():
 
@@ -642,20 +637,8 @@ def main():
 
 
 if __name__ == '__main__':
-    #warehouse()
     main()
 
-    # airflow
-    # curl "http://localhost:8080/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-08-04","env":"prd"}'
-
-    
-    #print(extract(env, date))
-    #print(load(env, date))
-    #print(transformation(env, date))
-
-    #query(env, 'gold_tracks')
-    #query('gold')
-    #test3()
 
 
 

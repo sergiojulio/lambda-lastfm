@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+from airflow.models import Variable
 from datetime import datetime
 
 # Define default_args and DAG
@@ -8,52 +9,72 @@ default_args = {
     'start_date': datetime(2024, 1, 1),
 }
 
-"""
-{
-  "my_param": "hello_from_ui",
-  "run_type": "ui"
-}
 
-curl "http://localhost:8080/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-11-15","env":"dev"}'
+def pull_date_from_conf(**context):
+    conf = context['dag_run'].conf or {}
+    return conf.get("date", "1970-01-01")
 
 """
+def local_run(**context):
+    conf = context['dag_run'].conf or {}
+    date = conf.get("date", "1970-01-01")
 
-def print_config(**context):
-    conf = context['dag_run'].conf
-    print(f"Config passed to DAG: {conf}")
-    print("My param:", conf.get("my_param", "not provided"))
+    import requests
+    
+    response = requests.get('http://lambda:8080/2015-03-31/functions/function/invocations')
+
+    status_code = response['StatusCode']
+    if status_code != 200:
+        raise Exception(f"Lambda failed with status code {status_code}")
+
+    response_payload = response['Payload'].read().decode('utf-8')
+    print("Lambda response:", response_payload)
+    #print(response['Payload'].read().decode())
+
+    ok_args = ""...
+
+"""
 
 
 
 
 with DAG(
-    dag_id='local_pipeline',
+    dag_id='p3_local_pipeline',
     default_args=default_args,
-    description='A simple DAG with three BashOperator tasks',
-    schedule_interval=None,  # Manual trigger
+    description='P3 Pipeline for local execution',
+    schedule_interval=None,  
     catchup=False,
-    tags=['example'],
+    tags=['P3'],
 ) as dag:
-
-    # Task 1: Print date
+    
+    get_date_task = PythonOperator(
+        task_id="get_datepipeline",
+        python_callable=pull_date_from_conf,
+        provide_context=True
+    )
+    
     extract = BashOperator(
         task_id='extract',
-        bash_command='curl "http://lambda:8080/2015-03-31/functions/function/invocations" -d \'{"step":"extract","date":"2024-11-15","env":"dev"}\''
+        bash_command=(
+            'curl "http://lambda:8080/2015-03-31/functions/function/invocations" '
+            '-d \'{"step":"extract","date":"{{ ti.xcom_pull(task_ids="get_datepipeline") }}","env":"dev"}\''
+        )    
     )
 
-    # Task 2: Sleep for 5 seconds
     load = BashOperator(
         task_id='load',
-        bash_command='curl "http://lambda:8080/2015-03-31/functions/function/invocations" -d \'{"step":"load","date":"2024-11-15","env":"dev"}\''
+        bash_command=(
+            'curl "http://lambda:8080/2015-03-31/functions/function/invocations" '
+            '-d \'{"step":"load","date":"{{ ti.xcom_pull(task_ids="get_datepipeline") }}","env":"dev"}\''
+        )      
     )
 
-    # Task 3: Echo a message
     transformation = BashOperator(
         task_id='transformation',
-        bash_command='curl "http://lambda:8080/2015-03-31/functions/function/invocations" -d \'{"step":"transformation","date":"2024-11-15","env":"dev"}\''
-
+        bash_command=(
+            'curl "http://lambda:8080/2015-03-31/functions/function/invocations" '
+            '-d \'{"step":"transformation","date":"{{ ti.xcom_pull(task_ids="get_datepipeline") }}","env":"dev"}\''
+        )  
     )
 
-
-    # Set task dependencies
-    extract >> load >> transformation
+    get_date_task >> extract >> load >> transformation

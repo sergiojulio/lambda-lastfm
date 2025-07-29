@@ -1,6 +1,5 @@
 version: "3.8"
-
-
+# Docker Compose file for Lambda, Trino, Postgres, Minio, and Airflow services
 services:
   lambda:
     container_name: lambda
@@ -17,10 +16,6 @@ services:
       - .:/var/task # SHOULD NOT
       - $HOME/.aws/:/root/.aws:ro    
     environment:
-    # prd aws secrects
-    #   - AWS_ACCESS_KEY_ID
-    #   - AWS_SECRET_ACCESS_KEY
-    #   - LASTFM_API_KEY
       - ENV=dev   
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123   
@@ -84,15 +79,15 @@ services:
     command: server /buckets --console-address ":9001"
     networks:
       - trino-network
-  redis:
-    container_name: redis
-    image: bitnami/redis:latest
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    volumes:
-      - ./redis:/bitnami
-    networks:
-      - trino-network         
+#  redis:
+#    container_name: redis
+#    image: bitnami/redis:latest
+#    environment:
+#      - ALLOW_EMPTY_PASSWORD=yes
+#    volumes:
+#      - ./redis:/bitnami
+#    networks:
+#      - trino-network         
   airflow-scheduler:
     container_name: airflow-scheduler
     build: 
@@ -115,7 +110,7 @@ services:
     volumes:
       #- /path/to/data:/data
       - ./airflow/dags:/opt/bitnami/airflow/dags
-      - ./airflow/logs:/opt/bitnami/airflow/logs      
+      - $HOME/.aws/:/opt/bitnami/.aws:ro
     networks:
       - trino-network         
   airflow:
@@ -146,6 +141,7 @@ services:
       #- /path/to/data:/data
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/logs:/opt/bitnami/airflow/logs
+      - $HOME/.aws/:/opt/bitnami/.aws:ro
     ports:
       - 8888:8888
     networks:
@@ -170,7 +166,7 @@ volumes:
 networks:
   trino-network:
     driver: bridge
-# secrets (unussed)
+
 secrets:
    airflow_fernet_key:
      file: ./airflow/secrets/airflow_fernet_key.txt

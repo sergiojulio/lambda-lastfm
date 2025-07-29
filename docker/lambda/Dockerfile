@@ -18,8 +18,6 @@ COPY ./dbt ${LAMBDA_TASK_ROOT}/dbt
 # allow rw
 RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/dbt/lastfm
 
-# aws - lastfm ev vars -> secrets
-
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 
 # aws lamda - local
@@ -28,5 +26,3 @@ CMD [ "lambda_function.handler" ]
 # aws ecs
 #ENTRYPOINT [ "python", "./lambda_function.py"]
 
- #curl "http://localhost:9090/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-08-05","env":"dev"}'
- #curl "http://localhost:9090/2015-03-31/functions/function/invocations" -d '{"step":"transformation","date":"2024-08-05","env":"prd"}'
