@@ -139,3 +139,4 @@ dmypy.json
 /airflow/logs
 /redis
 /airflow/secrets
+streamlit/.streamlit/secrets.toml

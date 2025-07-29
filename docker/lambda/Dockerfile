@@ -4,13 +4,12 @@ FROM public.ecr.aws/lambda/python:3.12
 WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Copy requirements.txt cloud aws
-COPY requirements.txt ${LAMBDA_TASK_ROOT}
+COPY ./aws/requirements.txt ${LAMBDA_TASK_ROOT}
 
 # Install the specified packages
 RUN pip install -r requirements.txt
 
-# Copy function code
-COPY lambda_function.py ${LAMBDA_TASK_ROOT}
+COPY ./aws/lambda_function.py ${LAMBDA_TASK_ROOT}
 
 # dbt project folder
 COPY ./dbt ${LAMBDA_TASK_ROOT}/dbt

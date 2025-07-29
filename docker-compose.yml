@@ -13,7 +13,7 @@ services:
       # - 9000:8080 original
       - 9090:8080
     volumes:
-      - .:/var/task # SHOULD NOT
+      - ./aws/:/var/task # SHOULD NOT
       - $HOME/.aws/:/root/.aws:ro    
     environment:
       - ENV=dev   
@@ -147,16 +147,16 @@ services:
     networks:
       - trino-network  
 
-#  streamlit:
-#    build: 
-#      context: ./ 
-#      dockerfile: ./docker/streamlit/Dockerfile
-#    command: streamlit run app/main.py --server.port 8501
-#    volumes:
-#      - ./:/usr/src/app
-#    ports:
-#      - 8501:8501
-#    image: yourstreamlitapp:latest
+  streamlit:
+    build: 
+      context: ./ 
+      dockerfile: ./docker/streamlit/Dockerfile
+    command: streamlit run app/main.py --server.port 8501
+    volumes:
+      - ./streamlit/:/usr/src/app
+    ports:
+      - 8501:8501
+ #   image: yourstreamlitapp:latest
 
 volumes:
   #postgres-db-volume:
