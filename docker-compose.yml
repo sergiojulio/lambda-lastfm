@@ -93,7 +93,7 @@ services:
     build: 
       context: ./ 
       dockerfile: ./docker/airflow/Dockerfile
-      secrets:
+    secrets:
       - airflow_fernet_key
       - airflow_secret_key  
     environment:
@@ -148,15 +148,18 @@ services:
       - trino-network  
 
   streamlit:
+    container_name: streamlit
     build: 
       context: ./ 
       dockerfile: ./docker/streamlit/Dockerfile
-    command: streamlit run app/main.py --server.port 8501
+    #command: streamlit run app/main.py --server.port 8501
     volumes:
-      - ./streamlit/:/usr/src/app
+      - ./streamlit:/app # dosen't work
     ports:
       - 8501:8501
  #   image: yourstreamlitapp:latest
+    networks:
+      - trino-network  
 
 volumes:
   #postgres-db-volume:

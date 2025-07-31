@@ -140,3 +140,4 @@ dmypy.json
 /redis
 /airflow/secrets
 streamlit/.streamlit/secrets.toml
+streamlit/.streamlit/config.toml
