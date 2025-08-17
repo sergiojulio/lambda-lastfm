@@ -14,13 +14,13 @@ services:
       - 9090:8080
     volumes:
       - ./aws/:/var/task # SHOULD NOT
-      - $HOME/.aws/:/root/.aws:ro    
+      - $HOME/.aws/:/root/.aws:ro    # problems here with rootless
     environment:
       - ENV=dev   
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123   
       - MINIO_ENDPOINT=http://minio:9000  
-      - POSTGRES_DB=pyiceberg_catalog
+      - POSTGRES_DB=postgres_catalog
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_SERVER=postgres
@@ -40,18 +40,18 @@ services:
     networks:
       - trino-network
   postgres:
-    container_name: postgres
-    image: postgres:14.1-alpine
+    container_name: postgresv
+    image: bitnami/postgresql:14
     #restart: always
     environment:
-      - POSTGRES_DB=postgres_catalog
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_ROOT_PASSWORD=root
+      - POSTGRESQL_USERNAME=postgres
+      - POSTGRESQL_PASSWORD=postgres
+      - POSTGRESQL_DATABASE=postgres_catalog
+      #- POSTGRESQL_CLIENT_MIN_MESSAGES=error
     ports:
       - '5432:5432'
     volumes:
-      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres:/bitnami/postgresql:rw
       # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql (initialization script)
       # - postgres-db-volume:/var/lib/postgresql/data (airflow)
 
@@ -73,6 +73,7 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
+      # endpoint http://minio:9000
     volumes:
       #- /path/to/data:/data
       - ./:/buckets
@@ -107,9 +108,11 @@ services:
       - AIRFLOW_DATABASE_USERNAME=postgres
       - AIRFLOW_DATABASE_PASSWORD=postgres
       - AIRFLOW_LOAD_EXAMPLES=no
+      # path log
     volumes:
       #- /path/to/data:/data
       - ./airflow/dags:/opt/bitnami/airflow/dags
+      - ./airflow/logs:/opt/bitnami/airflow/logs
       - $HOME/.aws/:/opt/bitnami/.aws:ro
     networks:
       - trino-network         
@@ -139,6 +142,7 @@ services:
       - AIRFLOW_LOAD_EXAMPLES=no
     volumes:
       #- /path/to/data:/data
+      #- ./airflow/airflow.cfg:/opt/airflow/bitnami/airflow.cfg
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/logs:/opt/bitnami/airflow/logs
       - $HOME/.aws/:/opt/bitnami/.aws:ro
@@ -147,22 +151,23 @@ services:
     networks:
       - trino-network  
 
-  streamlit:
-    container_name: streamlit
-    build: 
-      context: ./ 
-      dockerfile: ./docker/streamlit/Dockerfile
+#  streamlit:
+#    container_name: streamlit
+    #build: 
+    #  context: ./ 
+    #  dockerfile: ./docker/streamlit/Dockerfile
     #command: streamlit run app/main.py --server.port 8501
-    volumes:
-      - ./streamlit:/app # dosen't work
-    ports:
-      - 8501:8501
+#    volumes:
+#      - ./streamlit:/app # dosen't work
+#    ports:
+#      - 8501:8501
  #   image: yourstreamlitapp:latest
-    networks:
-      - trino-network  
+#    networks:
+#      - trino-network  
 
 volumes:
   #postgres-db-volume:
+  #  driver: local
   app:
     driver: local
 

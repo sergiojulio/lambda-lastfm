@@ -141,3 +141,6 @@ dmypy.json
 /airflow/secrets
 streamlit/.streamlit/secrets.toml
 streamlit/.streamlit/config.toml
+lambda-lastfm.code-workspace
+wh.py
+airflow/airflow.cfg
