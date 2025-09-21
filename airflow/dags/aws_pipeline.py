@@ -16,7 +16,7 @@ SUBNETS = os.getenv('SUBNETS')
 SECURITYGROUPS = os.getenv('SECURITYGROUPS')
 
 
-os.environ['AWS_SHARED_CREDENTIALS_FILE'] = '/opt/bitnami/.aws/credentials'
+os.environ['AWS_SHARED_CREDENTIALS_FILE'] = '/opt/bitnami/airflow/.aws/credentials'
 
 
 def invoke_lambda_1(**context):
@@ -72,8 +72,8 @@ def run_fargate_task(**context):
         count=1,
         networkConfiguration={
             'awsvpcConfiguration': {
-                'subnets': [SUBNETS],
-                'securityGroups': [SECURITYGROUPS],
+                'subnets': ['subnet-0d2ad026359acb35b','subnet-0c60ec54e99ee2e73','subnet-0da8f7bfe1b0fb041','subnet-0841975439c6e98f9','subnet-0bc424d2f30284780','subnet-014990a9c2a21283b'],
+                'securityGroups': ['sg-0864716ae56f03d2c'],
                 'assignPublicIp': 'ENABLED'
             }
         },
