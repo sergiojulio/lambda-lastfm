@@ -5,9 +5,9 @@ from airflow.providers.databricks.operators.databricks import DatabricksSubmitRu
 DATABRICKS_CONN_ID = 'databricks_default'
 
 notebook_task_config = {
-    "existing_cluster_id": "a1004-185319-4eog7244-v2n",  # put your real cluster ID
+    "existing_cluster_id": "",  # put your real cluster ID
     "notebook_task": {
-        "notebook_path": "/Workspace/Users/sergiojulio@gmail.com/notebook.ipynb"
+        "notebook_path": "/Workspace/Users/notebook.ipynb"
     }
 }
 
