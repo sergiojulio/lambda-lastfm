@@ -3,6 +3,8 @@ FROM public.ecr.aws/lambda/python:3.12
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 
+#USER nobody
+
 # Copy requirements.txt cloud aws
 COPY ./aws/requirements.txt ${LAMBDA_TASK_ROOT}
 
@@ -11,11 +13,15 @@ RUN pip install -r requirements.txt
 
 COPY ./aws/lambda_function.py ${LAMBDA_TASK_ROOT}
 
+COPY ./aws/test.py ${LAMBDA_TASK_ROOT}
+
+RUN mkdir -p ${LAMBDA_TASK_ROOT}/dbt
+
 # dbt project folder
 COPY ./dbt ${LAMBDA_TASK_ROOT}/dbt
 
 # allow rw
-RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/dbt/lastfm
+#RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/dbt/lastfm
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 

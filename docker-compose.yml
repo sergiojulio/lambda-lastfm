@@ -13,10 +13,11 @@ services:
       # - 9000:8080 original
       - 9090:8080
     volumes:
-      - ./aws/:/var/task # SHOULD NOT
-      - $HOME/.aws/:/root/.aws:ro    # problems here with rootless
+      #- ./aws/:/var/task # SHOULD NOT
+      - $HOME/.aws/:/var/task/.aws:ro    # problems here with rootless
     environment:
       - ENV=dev   
+      #- AWS_SHARED_CREDENTIALS_FILE=/var/task/.aws/credentials
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123   
       - MINIO_ENDPOINT=http://minio:9000  
@@ -79,16 +80,7 @@ services:
       - ./:/buckets
     command: server /buckets --console-address ":9001"
     networks:
-      - trino-network
-#  redis:
-#    container_name: redis
-#    image: bitnami/redis:latest
-#    environment:
-#      - ALLOW_EMPTY_PASSWORD=yes
-#    volumes:
-#      - ./redis:/bitnami
-#    networks:
-#      - trino-network         
+      - trino-network      
   airflow-scheduler:
     container_name: airflow-scheduler
     build: 
@@ -113,7 +105,7 @@ services:
       #- /path/to/data:/data
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/logs:/opt/bitnami/airflow/logs
-      - $HOME/.aws/:/opt/bitnami/.aws:ro
+      - $HOME/.aws/:/opt/bitnami/airflow/.aws:ro
     networks:
       - trino-network         
   airflow:
@@ -145,7 +137,7 @@ services:
       #- ./airflow/airflow.cfg:/opt/airflow/bitnami/airflow.cfg
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/logs:/opt/bitnami/airflow/logs
-      - $HOME/.aws/:/opt/bitnami/.aws:ro
+      - $HOME/.aws/:/opt/bitnami/airflow/.aws:ro
     ports:
       - 8888:8888
     networks:
